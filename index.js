@@ -1,15 +1,15 @@
 
-const oxenmq = require('./build/Release/oxenmq.node');
+const sispopmq = require('./build/Release/sispopmq.node');
 
-// console.log('oxenmq', oxenmq);
+// console.log('sispopmq', sispopmq);
 
-let a = new oxenmq.Address(
-        'tcp+curve://public.loki.foundation:22027/3c157ed3c675f56280dc5d8b2f00b327b5865c127bf2c6c42becc3ca73d9132b');
+let a = new sispopmq.Address(
+        'tcp+curve://129.151.164.202:22843/4e63f016b964bb8620e6763974c34505d27a95aad8f9465a55287cabbfc9cd7d');
 
 
 async function init() {
     console.log('starting');
-    let omq = new oxenmq.OxenMQ();
+    let omq = new sispopmq.SispopMQ();
     omq.start()
 
     console.log('connecting to', a.fullAddress);

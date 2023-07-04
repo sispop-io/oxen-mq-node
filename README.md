@@ -1,7 +1,7 @@
-# OxenMQ bindings for Nodejs
+# SispopMQ bindings for Nodejs
 
-This provides basic async bindings for using OxenMQ.  Currently only basic client requests are
-supported, but this will be expanded in the future to cover more of OxenMQ's capabilities.
+This provides basic async bindings for using SispopMQ.  Currently only basic client requests are
+supported, but this will be expanded in the future to cover more of SispopMQ's capabilities.
 
 # License
 
@@ -10,4 +10,4 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-Copyright © 2022 The Oxen Project
+Copyright © 2022 The Sispop Project

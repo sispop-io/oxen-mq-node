@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(oxenmq-node)
+project(sispopmq-node)
 
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "disable shared oxen-mq")
-add_subdirectory(oxen-mq)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "disable shared sispop-mq")
+add_subdirectory(sispop-mq)
 
-add_library(${PROJECT_NAME} SHARED src/oxenmq.cpp ${CMAKE_JS_SRC})
+add_library(${PROJECT_NAME} SHARED src/sispopmq.cpp ${CMAKE_JS_SRC})
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
-target_link_libraries(${PROJECT_NAME} PRIVATE oxenmq::oxenmq ${CMAKE_JS_LIB})
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" OUTPUT_NAME "oxenmq" SUFFIX ".node")
+target_link_libraries(${PROJECT_NAME} PRIVATE sispopmq::sispopmq ${CMAKE_JS_LIB})
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" OUTPUT_NAME "sispopmq" SUFFIX ".node")
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     NAPI_VERSION=6

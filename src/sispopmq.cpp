@@ -1,8 +1,8 @@
 #include <napi.h>
-#include <oxenmq/connections.h>
-#include <oxenmq/oxenmq.h>
+#include <sispopmq/connections.h>
+#include <sispopmq/sispopmq.h>
 
-namespace noxenmq {
+namespace nsispopmq {
 
 using namespace std::literals;
 
@@ -25,19 +25,19 @@ namespace {
 }  // namespace
 
 struct ctors {
-    Napi::FunctionReference NConnectionID, NAddress, NMessage, NOxenMQ, NReply;
+    Napi::FunctionReference NConnectionID, NAddress, NMessage, NSispopMQ, NReply;
 };
 
 class NConnectionID : public Napi::ObjectWrap<NConnectionID> {
   private:
-    std::unique_ptr<oxenmq::ConnectionID> instance;
+    std::unique_ptr<sispopmq::ConnectionID> instance;
 
   public:
     NConnectionID(const Napi::CallbackInfo& info) : Napi::ObjectWrap<NConnectionID>(info) {
         if (info.Length() != 1 || !info[0].IsExternal())
             throw std::logic_error{"ConnectionID is not directly constructible"};
 
-        instance.reset(info[0].As<Napi::External<oxenmq::ConnectionID>>().Data());
+        instance.reset(info[0].As<Napi::External<sispopmq::ConnectionID>>().Data());
     }
 
     static void napi_init(Napi::Env& env, Napi::Object& exports, ctors& ct) {
@@ -56,7 +56,7 @@ class NConnectionID : public Napi::ObjectWrap<NConnectionID> {
         exports.Set("ConnectionID", func);
     }
 
-    const oxenmq::ConnectionID& get() const { return *instance; }
+    const sispopmq::ConnectionID& get() const { return *instance; }
 
     Napi::Value isServiceNode(const Napi::CallbackInfo& info) {
         return napi_cast<Napi::Boolean>(info, instance->sn());
@@ -83,10 +83,10 @@ class NConnectionID : public Napi::ObjectWrap<NConnectionID> {
         return Napi::Boolean::New(env, instance == other->instance);
     }
 
-    // Copy a oxenmq::ConnectionID into a node-wrapped NConnectionID
-    static Napi::Object wrap(const Napi::Env& env, const oxenmq::ConnectionID& conn) {
+    // Copy a sispopmq::ConnectionID into a node-wrapped NConnectionID
+    static Napi::Object wrap(const Napi::Env& env, const sispopmq::ConnectionID& conn) {
         return env.GetInstanceData<ctors>()->NConnectionID.New(
-                {Napi::External<oxenmq::ConnectionID>::New(env, new oxenmq::ConnectionID{conn})});
+                {Napi::External<sispopmq::ConnectionID>::New(env, new sispopmq::ConnectionID{conn})});
     }
 
     friend class NMessage;
@@ -94,7 +94,7 @@ class NConnectionID : public Napi::ObjectWrap<NConnectionID> {
 
 class NAddress : public Napi::ObjectWrap<NAddress> {
   private:
-    oxenmq::address instance;
+    sispopmq::address instance;
 
   public:
     NAddress(const Napi::CallbackInfo& info) : Napi::ObjectWrap<NAddress>(info) {
@@ -107,7 +107,7 @@ class NAddress : public Napi::ObjectWrap<NAddress> {
         // "curve://HOSTNAME:PORT/PUBKEY".
         if (length == 1 && info[0].IsString()) {
             std::string addr = info[0].ToString();
-            instance = oxenmq::address{addr};
+            instance = sispopmq::address{addr};
             return;
         }
 
@@ -138,7 +138,7 @@ class NAddress : public Napi::ObjectWrap<NAddress> {
         exports.Set("Address", func);
     }
 
-    const oxenmq::address& get() const { return instance; }
+    const sispopmq::address& get() const { return instance; }
 
     Napi::Value pubkey(const Napi::CallbackInfo& info) {
         return napi_copy_bytes(info.Env(), instance.pubkey);
@@ -157,14 +157,14 @@ class NAddress : public Napi::ObjectWrap<NAddress> {
     }
     Napi::Value fullAddress(const Napi::CallbackInfo& info) {
         return napi_cast<Napi::String>(
-                info, instance.full_address(oxenmq::address::encoding::base32z));
+                info, instance.full_address(sispopmq::address::encoding::base32z));
     }
     Napi::Value fullAddressB64(const Napi::CallbackInfo& info) {
         return napi_cast<Napi::String>(
-                info, instance.full_address(oxenmq::address::encoding::base64));
+                info, instance.full_address(sispopmq::address::encoding::base64));
     }
     Napi::Value fullAddressHex(const Napi::CallbackInfo& info) {
-        return napi_cast<Napi::String>(info, instance.full_address(oxenmq::address::encoding::hex));
+        return napi_cast<Napi::String>(info, instance.full_address(sispopmq::address::encoding::hex));
     }
     Napi::Value qr(const Napi::CallbackInfo& info) {
         return napi_cast<Napi::String>(info, instance.qr_address());
@@ -181,7 +181,7 @@ class NAddress : public Napi::ObjectWrap<NAddress> {
     }
 };
 
-// oxenmq::Message is designed to be ephemeral, used only in the callback.  That doesn't fit well at
+// sispopmq::Message is designed to be ephemeral, used only in the callback.  That doesn't fit well at
 // all with node, so we effectively copy the important data out of it.
 class NMessage : public Napi::ObjectWrap<NMessage> {
   private:
@@ -189,13 +189,13 @@ class NMessage : public Napi::ObjectWrap<NMessage> {
     Napi::TypedArrayOf<Napi::Buffer<uint8_t>> data_;
     // Holds the conn and reply tag for us; we don't currently use it to send things, but we could
     // in the future.
-    std::optional<oxenmq::Message::DeferredSend> defer_;
+    std::optional<sispopmq::Message::DeferredSend> defer_;
 
   public:
     NMessage(const Napi::CallbackInfo& info) : Napi::ObjectWrap<NMessage>(info) {
         if (info.Length() != 1 || !info[0].IsExternal())
             throw std::logic_error{"Message is not directly constructible"};
-        std::unique_ptr<oxenmq::Message> mptr{info[0].As<Napi::External<oxenmq::Message>>().Data()};
+        std::unique_ptr<sispopmq::Message> mptr{info[0].As<Napi::External<sispopmq::Message>>().Data()};
         auto env = info.Env();
         auto& m = *mptr;
         defer_.emplace(m.send_later());
@@ -215,7 +215,7 @@ class NMessage : public Napi::ObjectWrap<NMessage> {
                         InstanceAccessor("isRequest", &NMessage::isRequest, nullptr),
                         InstanceAccessor("remoteAddress", &NMessage::remoteAddress, nullptr),
                         InstanceAccessor("conn", &NMessage::conn, nullptr),
-                        // Returns a *copy* of the data; oxenmq exposes a view, but it's only valid
+                        // Returns a *copy* of the data; sispopmq exposes a view, but it's only valid
                         // for the duration of the callback itself.
                         InstanceAccessor("data", &NMessage::data, nullptr),
                 });
@@ -234,22 +234,22 @@ class NMessage : public Napi::ObjectWrap<NMessage> {
     Napi::Value conn(const Napi::CallbackInfo& info) {
         auto env = info.Env();
         auto c = env.GetInstanceData<ctors>()->NConnectionID.New(
-                {Napi::External<oxenmq::ConnectionID>::New(
-                        env, new oxenmq::ConnectionID{defer_->conn})});
+                {Napi::External<sispopmq::ConnectionID>::New(
+                        env, new sispopmq::ConnectionID{defer_->conn})});
         return c;
     }
     Napi::Value data(const Napi::CallbackInfo&) { return data_; }
 };
 
-class NOxenMQ : public Napi::ObjectWrap<NOxenMQ> {
-    std::optional<oxenmq::OxenMQ> omq;
+class NSispopMQ : public Napi::ObjectWrap<NSispopMQ> {
+    std::optional<sispopmq::SispopMQ> omq;
 
   public:
-    NOxenMQ(const Napi::CallbackInfo& info) : Napi::ObjectWrap<NOxenMQ>(info) {
-        // TODO: support various constructor invocations to map some of the things the OxenMQ
+    NSispopMQ(const Napi::CallbackInfo& info) : Napi::ObjectWrap<NSispopMQ>(info) {
+        // TODO: support various constructor invocations to map some of the things the SispopMQ
         // constructor supports.
         if (info.Length() != 0)
-            throw std::logic_error{"OxenMQ constructor takes no arguments"};
+            throw std::logic_error{"SispopMQ constructor takes no arguments"};
 
         omq.emplace();
     }
@@ -259,47 +259,47 @@ class NOxenMQ : public Napi::ObjectWrap<NOxenMQ> {
 
         Napi::Function func = DefineClass(
                 env,
-                "OxenMQ",
+                "SispopMQ",
                 {
                         InstanceAccessor(
-                                "handshakeMs", &NOxenMQ::handshake_time, &NOxenMQ::handshake_time),
+                                "handshakeMs", &NSispopMQ::handshake_time, &NSispopMQ::handshake_time),
                         InstanceAccessor(
-                                "maxMessageSize", &NOxenMQ::max_msg_size, &NOxenMQ::max_msg_size),
+                                "maxMessageSize", &NSispopMQ::max_msg_size, &NSispopMQ::max_msg_size),
                         InstanceAccessor(
-                                "maxSockets", &NOxenMQ::max_sockets, &NOxenMQ::max_sockets),
+                                "maxSockets", &NSispopMQ::max_sockets, &NSispopMQ::max_sockets),
                         InstanceAccessor(
                                 "reconnectIntervalMs",
-                                &NOxenMQ::reconnect_interval,
-                                &NOxenMQ::reconnect_interval),
+                                &NSispopMQ::reconnect_interval,
+                                &NSispopMQ::reconnect_interval),
                         InstanceAccessor(
                                 "maxReconnectIntervalMs",
-                                &NOxenMQ::reconnect_interval_max,
-                                &NOxenMQ::reconnect_interval_max),
+                                &NSispopMQ::reconnect_interval_max,
+                                &NSispopMQ::reconnect_interval_max),
                         InstanceAccessor(
-                                "closeLingerMs", &NOxenMQ::close_linger, &NOxenMQ::close_linger),
+                                "closeLingerMs", &NSispopMQ::close_linger, &NSispopMQ::close_linger),
                         InstanceAccessor(
-                                "connCheckIntervalMs", &NOxenMQ::conn_check, &NOxenMQ::conn_check),
+                                "connCheckIntervalMs", &NSispopMQ::conn_check, &NSispopMQ::conn_check),
                         InstanceAccessor(
                                 "connHeartbeatMs",
-                                &NOxenMQ::conn_heartbeat,
-                                &NOxenMQ::conn_heartbeat),
+                                &NSispopMQ::conn_heartbeat,
+                                &NSispopMQ::conn_heartbeat),
                         InstanceAccessor(
                                 "connHeartbeatTimeoutMs",
-                                &NOxenMQ::conn_heartbeat_timeout,
-                                &NOxenMQ::conn_heartbeat_timeout),
-                        InstanceAccessor("pubkey", &NOxenMQ::pubkey, nullptr),
-                        InstanceAccessor("privkey", &NOxenMQ::privkey, nullptr),
-                        InstanceMethod("start", &NOxenMQ::start),
-                        InstanceMethod("connectRemote", &NOxenMQ::connect_remote),
-                        InstanceMethod("connectRemoteAsync", &NOxenMQ::connect_remote_async),
-                        InstanceMethod("disconnect", &NOxenMQ::disconnect),
-                        InstanceMethod("request", &NOxenMQ::request),
+                                &NSispopMQ::conn_heartbeat_timeout,
+                                &NSispopMQ::conn_heartbeat_timeout),
+                        InstanceAccessor("pubkey", &NSispopMQ::pubkey, nullptr),
+                        InstanceAccessor("privkey", &NSispopMQ::privkey, nullptr),
+                        InstanceMethod("start", &NSispopMQ::start),
+                        InstanceMethod("connectRemote", &NSispopMQ::connect_remote),
+                        InstanceMethod("connectRemoteAsync", &NSispopMQ::connect_remote_async),
+                        InstanceMethod("disconnect", &NSispopMQ::disconnect),
+                        InstanceMethod("request", &NSispopMQ::request),
 
                 });
 
-        ct.NOxenMQ = Napi::Persistent(func);
+        ct.NSispopMQ = Napi::Persistent(func);
 
-        exports.Set("OxenMQ", func);
+        exports.Set("SispopMQ", func);
     }
 
     void handshake_time(const Napi::CallbackInfo&, const Napi::Value& value) {
@@ -367,7 +367,7 @@ class NOxenMQ : public Napi::ObjectWrap<NOxenMQ> {
     void start(const Napi::CallbackInfo&) { omq->start(); }
 
 
-    using ConnectResult = std::pair<oxenmq::ConnectionID, std::optional<std::string>>;
+    using ConnectResult = std::pair<sispopmq::ConnectionID, std::optional<std::string>>;
     // This function is indirectly invoked via a ThreadSafeConnectFunc (below) which is called from
     // a thread, queues the result, then calls *this* function in the main thread (from which we are
     // allowed to touch node):
@@ -401,13 +401,13 @@ class NOxenMQ : public Napi::ObjectWrap<NOxenMQ> {
         auto* def = new Napi::Promise::Deferred(Napi::Promise::Deferred::New(env));
 
         auto f = ThreadSafeConnectFunc::New(
-                env, "OxenMQ-Connect", 0, 1, def);
+                env, "SispopMQ-Connect", 0, 1, def);
 
-        auto on_success = [f](oxenmq::ConnectionID c) {
+        auto on_success = [f](sispopmq::ConnectionID c) {
             f.BlockingCall(new ConnectResult{c, std::nullopt});
             f.Release();
         };
-        auto on_failure = [f = std::move(f)](oxenmq::ConnectionID c, std::string_view reason) {
+        auto on_failure = [f = std::move(f)](sispopmq::ConnectionID c, std::string_view reason) {
             f.BlockingCall(new ConnectResult{c, std::string{reason}});
             f.Release();
         };
@@ -495,14 +495,14 @@ class NOxenMQ : public Napi::ObjectWrap<NOxenMQ> {
 
         auto def = new Napi::Promise::Deferred(Napi::Promise::Deferred::New(env));
         auto handle_reply = [reply_relay =
-                                     ThreadSafeReplyFunc::New(env, "OxenMQ-Reply", 0, 1, def)](
+                                     ThreadSafeReplyFunc::New(env, "SispopMQ-Reply", 0, 1, def)](
                                     bool success, std::vector<std::string> data) {
             reply_relay.BlockingCall(new std::pair<bool, std::vector<std::string>>{
                     std::move(success), std::move(data)});
             reply_relay.Release();
         };
 
-        oxenmq::send_option::request_timeout r_timeout{-1ms};
+        sispopmq::send_option::request_timeout r_timeout{-1ms};
         if (info.Length() > 3) {
             auto opts = info[3].As<Napi::Object>();
             auto timeout = opts.Get("timeout");
@@ -514,25 +514,25 @@ class NOxenMQ : public Napi::ObjectWrap<NOxenMQ> {
                 conn->get(),
                 endpoint,
                 std::move(handle_reply),
-                oxenmq::send_option::data_parts(parts),
+                sispopmq::send_option::data_parts(parts),
                 r_timeout);
 
         return def->Promise();
     }
 };
 
-}  // namespace noxenmq
+}  // namespace nsispopmq
 
 // The wonderful NODE_API macros break if given a namespaced init function, so here we provide a
 // lovely top-level function that wraps the namespaced one.
-Napi::Object oxenmq_module_init(Napi::Env env, Napi::Object exports) {
-    auto* ctors = new noxenmq::ctors{};
-    noxenmq::NConnectionID::napi_init(env, exports, *ctors);
-    noxenmq::NAddress::napi_init(env, exports, *ctors);
-    noxenmq::NMessage::napi_init(env, exports, *ctors);
-    noxenmq::NOxenMQ::napi_init(env, exports, *ctors);
+Napi::Object sispopmq_module_init(Napi::Env env, Napi::Object exports) {
+    auto* ctors = new nsispopmq::ctors{};
+    nsispopmq::NConnectionID::napi_init(env, exports, *ctors);
+    nsispopmq::NAddress::napi_init(env, exports, *ctors);
+    nsispopmq::NMessage::napi_init(env, exports, *ctors);
+    nsispopmq::NSispopMQ::napi_init(env, exports, *ctors);
     env.SetInstanceData(ctors);
     return exports;
 }
 
-NODE_API_MODULE(oxenmq, oxenmq_module_init)
+NODE_API_MODULE(sispopmq, sispopmq_module_init)
