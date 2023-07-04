@@ -1,0 +1,3 @@
+[submodule "sispop-mq"]
+	path = sispop-mq
+	url = https://github.com/syssiproject/sispop-mq
